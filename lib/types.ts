@@ -1,0 +1,104 @@
+// Normalized commerce types used across the storefront.
+// Both the Shopify adapter and the demo catalog return these shapes,
+// so pages never need to know where the data came from.
+
+export type Money = {
+  amount: string;
+  currencyCode: string;
+};
+
+export type Image = {
+  url: string;
+  altText: string;
+  width: number;
+  height: number;
+};
+
+export type SelectedOption = {
+  name: string;
+  value: string;
+};
+
+export type ProductOption = {
+  id: string;
+  name: string;
+  values: string[];
+};
+
+export type ProductVariant = {
+  id: string;
+  title: string;
+  availableForSale: boolean;
+  selectedOptions: SelectedOption[];
+  price: Money;
+  compareAtPrice: Money | null;
+  sku?: string | null;
+};
+
+export type ScentNotes = {
+  top: string[];
+  heart: string[];
+  base: string[];
+};
+
+export type Gender = "men" | "women" | "unisex";
+
+export type Product = {
+  id: string;
+  handle: string;
+  title: string;
+  /** Designer house, e.g. "Dior". Comes from the Shopify `vendor` field. */
+  vendor: string;
+  /** Concentration, e.g. "Eau de Parfum". Comes from Shopify `productType`. */
+  productType: string;
+  description: string;
+  descriptionHtml: string;
+  availableForSale: boolean;
+  tags: string[];
+  gender: Gender;
+  notes: ScentNotes | null;
+  options: ProductOption[];
+  variants: ProductVariant[];
+  images: Image[];
+  featuredImage: Image | null;
+  priceRange: { minVariantPrice: Money; maxVariantPrice: Money };
+  compareAtPriceRange: { maxVariantPrice: Money } | null;
+  seo: { title: string | null; description: string | null };
+  updatedAt: string;
+  /** Visual palette used by the generated bottle illustration in demo mode. */
+  demoArt?: { liquid: string; cap: string; label: string };
+};
+
+export type Collection = {
+  handle: string;
+  title: string;
+  description: string;
+  seo: { title: string | null; description: string | null };
+  updatedAt: string;
+};
+
+export type CartLine = {
+  id: string;
+  quantity: number;
+  cost: { totalAmount: Money };
+  merchandise: {
+    id: string;
+    title: string;
+    selectedOptions: SelectedOption[];
+    price: Money;
+    product: Pick<Product, "handle" | "title" | "vendor" | "featuredImage" | "demoArt">;
+  };
+};
+
+export type Cart = {
+  id: string | null;
+  checkoutUrl: string;
+  totalQuantity: number;
+  lines: CartLine[];
+  cost: {
+    subtotalAmount: Money;
+    totalAmount: Money;
+  };
+};
+
+export type SortKey = "featured" | "best-selling" | "price-asc" | "price-desc" | "newest" | "title";
