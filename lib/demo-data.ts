@@ -1,6 +1,6 @@
 // SAMPLE CATALOG — used only when Shopify credentials are not configured.
 // It lets you preview the full storefront design before connecting your store.
-// Once SHOPIFY_STORE_DOMAIN + SHOPIFY_STOREFRONT_ACCESS_TOKEN are set, every
+// Once the Shopify store domain + Storefront token are set, every
 // page reads live products from Shopify and this file is ignored.
 
 import type { Collection, Gender, Product, ScentNotes } from "./types";

@@ -4,6 +4,8 @@
 
 A fast, mobile-first, SEO-optimized e-commerce site for selling 100% authentic designer perfumes and colognes for men and women, below retail. It's built with **Next.js** and connects to **Shopify** as a headless storefront. Shopify holds your products, inventory, orders, payments and checkout, and this site is the branded shop window your customers browse.
 
+The site builds to plain static files, so it's hosted free on **GitHub Pages**. A GitHub Action rebuilds and publishes it on every change to `main` and every 6 hours, so product, price and stock updates from Shopify show up automatically.
+
 The site is written in English with Spanish mixed in (*Para Él / Para Ella, Descubre tu aroma, 100% original o te devolvemos tu dinero*) and follows the brand board in [`/brand`](./brand): Royal Plum, Champagne Gold and Soft Ivory, with Playfair Display, Montserrat and Inter type.
 
 ---
@@ -12,9 +14,9 @@ The site is written in English with Spanish mixed in (*Para Él / Para Ella, Des
 
 1. [What's included](#whats-included)
 2. [Quick start (preview locally)](#quick-start-preview-locally)
-3. [Connect your Shopify store](#connect-your-shopify-store)
-4. [Set up your products in Shopify](#set-up-your-products-in-shopify)
-5. [Deploy (go live)](#deploy-go-live)
+3. [Go live on GitHub Pages](#go-live-on-github-pages)
+4. [Connect your Shopify store](#connect-your-shopify-store)
+5. [Set up your products in Shopify](#set-up-your-products-in-shopify)
 6. [SEO](#seo)
 7. [Mobile](#mobile)
 8. [Customizing](#customizing)
@@ -31,7 +33,7 @@ The site is written in English with Spanish mixed in (*Para Él / Para Ella, Des
 | **Collections** | `/collections/all`, `men`, `women`, `unisex`, `best-sellers` and `gift-sets`, plus any collection you create in Shopify. Sort (best selling, price, newest, A–Z) and filter by brand |
 | **Product pages** | Image gallery, size selector, quantity, sale price vs. retail with "Save X%", fragrance notes (top/heart/base), authenticity and shipping assurances, how-to-wear, related products, and a sticky "Add to Bag" bar on mobile |
 | **Cart** | Slide-out bag drawer and full `/cart` page, free-shipping progress meter, quantity changes, then **Shopify's secure checkout** (Shop Pay, Apple Pay, Google Pay, cards) |
-| **Search** | `/search?q=`, searching across brand, name, type and tags |
+| **Search** | Instant search across brand, name, type, tags and scent notes |
 | **Content pages** | Our Story, Authenticity Promise, Shipping & Returns, FAQ, Fragrance Care, Contact, Privacy Policy, Terms of Service |
 | **SEO** | Per-page titles and descriptions, canonical URLs, Open Graph/Twitter cards, `sitemap.xml`, `robots.txt`, and structured data (Product with offers, shipping and return policy; Breadcrumbs; FAQ; Organization; WebSite search box) |
 | **Demo mode** | Runs with a sample catalog until you add Shopify credentials, so you can preview everything now |
@@ -52,10 +54,38 @@ Open <http://localhost:3000>. The site starts in **demo mode**: you'll see a dar
 Other commands:
 
 ```bash
-npm run build      # production build
-npm start          # run the production build
+npm run build      # static build into the out/ folder
 npm run typecheck  # TypeScript check
 ```
+
+---
+
+## Go live on GitHub Pages
+
+The workflow in [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml) does the publishing. One-time setup:
+
+1. **Settings → Pages → Build and deployment → Source: choose "GitHub Actions"** (not "Deploy from a branch").
+2. **Settings → Secrets and variables → Actions:**
+
+   | Type | Name | Value |
+   | --- | --- | --- |
+   | Variable | `SHOPIFY_STORE_DOMAIN` | `your-store.myshopify.com` |
+   | Secret | `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | Public Storefront API token (see below) |
+   | Variable (optional) | `SITE_URL` | Your custom domain, e.g. `https://www.huelerico.com` |
+   | Variable (optional) | `SHOPIFY_API_VERSION` | e.g. `2026-07` |
+   | Variable (optional) | `CONTACT_EMAIL`, `INSTAGRAM_URL`, `TIKTOK_URL`, `FACEBOOK_URL` | Your details |
+   | Variable (optional) | `NEWSLETTER_WEBHOOK_URL`, `CONTACT_WEBHOOK_URL` | See [Customizing](#customizing) |
+
+   Without the Shopify values, the site publishes in **demo mode** with the sample catalog.
+3. **Actions → Deploy to GitHub Pages → Run workflow** (or push to `main`).
+
+The site appears at `https://<your-username>.github.io/huele-rico-ecommerce-claude/`.
+
+**Custom domain:** in **Settings → Pages → Custom domain** enter `www.yourdomain.com`, add the DNS records GitHub shows you, tick **Enforce HTTPS**, and set the `SITE_URL` variable to `https://www.yourdomain.com` so links and SEO tags use it.
+
+**Updates:** product, price and stock changes in Shopify appear after the next build, which runs every 6 hours. To publish a change right away, open **Actions → Deploy to GitHub Pages → Run workflow**.
+
+**Branches:** do day-to-day work on `dev` (and `qa` for testing if you like), then merge into `main` to publish.
 
 ---
 
@@ -71,41 +101,12 @@ npm run typecheck  # TypeScript check
    - `unauthenticated_write_checkouts` and `unauthenticated_read_checkouts`
    - `unauthenticated_read_content` (optional)
 4. **Copy the public Storefront API access token.**
-5. **Create your environment file:**
+5. **Add the values to GitHub** as described in [Go live on GitHub Pages](#go-live-on-github-pages), then run the workflow.
+6. **To test locally**, copy `.env.example` to `.env.local`, fill in `NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN` and `NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN`, and run `npm run dev`. The demo banner disappears and your real products show up.
 
-   ```bash
-   cp .env.example .env.local
-   ```
+The store domain must be the **`.myshopify.com`** domain, not your custom domain.
 
-   Then fill in:
-
-   ```env
-   NEXT_PUBLIC_SITE_URL=https://www.yourdomain.com
-   SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
-   SHOPIFY_STOREFRONT_ACCESS_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxx
-   SHOPIFY_API_VERSION=2026-07
-   SHOPIFY_REVALIDATION_SECRET=any-long-random-string
-   ```
-
-   `SHOPIFY_STORE_DOMAIN` must be the **`.myshopify.com`** domain, not your custom domain.
-
-6. **Restart** with `npm run dev`. The demo banner disappears and your real products show up.
-
-> Environment variables are read when the site **builds**. After changing them on your host, **redeploy**.
-
-### Instant product updates (recommended)
-
-Product data is cached for 5 minutes, which keeps pages fast. To refresh the site immediately when you edit a product, go to Shopify admin → **Settings → Notifications → Webhooks** and create webhooks (format: JSON) for:
-
-- Product creation, Product update, Product deletion
-- Collection update
-- Inventory level update
-
-Point each one at:
-
-```
-https://www.yourdomain.com/api/revalidate?secret=YOUR_SHOPIFY_REVALIDATION_SECRET
-```
+> **Is it safe to publish the token?** Yes. The *Storefront* token is designed to live in the browser: it can only read your public catalog and create carts. Never use an **Admin API** token here.
 
 ### Checkout domain
 
@@ -160,17 +161,9 @@ For the look in the brand board ("Clean Bottle Closeups"), use square or 4:5 pho
 
 ---
 
-## Deploy (go live)
+### Other hosts
 
-The easiest host is **[Vercel](https://vercel.com)** (made by the creators of Next.js; the free tier works).
-
-1. Push this repository to GitHub (already done if you're reading this there).
-2. In Vercel: **Add New → Project → import this repo**. Framework: Next.js (auto-detected).
-3. Add the environment variables from `.env.local` under **Settings → Environment Variables**.
-4. Click **Deploy**.
-5. Add your custom domain under **Settings → Domains** (e.g. `www.huelerico.com`), and make sure `NEXT_PUBLIC_SITE_URL` matches it.
-
-Netlify, Cloudflare and any Node.js host also work (`npm run build && npm start`).
+Because the build is plain static files (`out/`), Netlify, Cloudflare Pages and Vercel work too. Set the same `NEXT_PUBLIC_…` environment variables from `.env.example`, use `npm run build` as the build command and `out` as the output folder.
 
 ---
 
@@ -179,14 +172,14 @@ Netlify, Cloudflare and any Node.js host also work (`npm run build && npm start`
 Already built in:
 
 - **Unique titles and meta descriptions** for every page, using Shopify's SEO fields when set.
-- **Canonical URLs.** Sorted or filtered collection URLs are marked `noindex` so they don't compete with the main page.
+- **Canonical URLs** on every page.
 - **Structured data (JSON-LD)** for Google rich results:
   - `Product` with price, availability, brand, shipping details and return policy, so search results can show price and stock
   - `BreadcrumbList`, `FAQPage`, `CollectionPage` / `ItemList`
   - `OnlineStore` (organization) and `WebSite` with a sitelinks search box
 - **`/sitemap.xml`**, generated automatically from your products, collections and pages, and **`/robots.txt`**, which blocks cart, checkout, search and API routes.
 - **Open Graph and Twitter cards**, so links shared on Instagram, WhatsApp, iMessage and Facebook show a rich preview (product photo or the rooftop lifestyle image).
-- **Performance:** server-rendered and cached pages, self-hosted fonts, and responsive AVIF/WebP images through `next/image`.
+- **Performance:** every page is pre-built static HTML served from GitHub's CDN, with self-hosted fonts and lightweight WebP images.
 - **Semantic, accessible HTML:** one H1 per page, landmarks, alt text, keyboard support and visible focus states.
 - **Bilingual keywords:** *perfumes originales, lociones originales, para él, para ella*.
 
@@ -221,12 +214,14 @@ The layout is mobile-first and tested at phone widths (390 px):
 | About, Authenticity, Shipping, FAQ, Privacy and Terms copy | [`lib/pages.tsx`](./lib/pages.tsx) |
 | Announcement bar text | [`components/header.tsx`](./components/header.tsx) |
 | Images | [`public/images`](./public/images): replace the files, keeping the same names |
-| Social links | `NEXT_PUBLIC_INSTAGRAM_URL`, `NEXT_PUBLIC_TIKTOK_URL`, `NEXT_PUBLIC_FACEBOOK_URL` |
+| Social links | `INSTAGRAM_URL`, `TIKTOK_URL`, `FACEBOOK_URL` repository variables |
 
 **Newsletter and contact form.** These send submissions as JSON to any webhook you choose (Klaviyo, Shopify Flow, Zapier, Make, etc.):
 
-- `NEWSLETTER_WEBHOOK_URL` receives `{ email, source, tags }`. The sign-up form stays hidden on the live site until this is set, so no sign-ups are lost.
-- `CONTACT_WEBHOOK_URL` receives `{ name, email, order, message }`. Without it, the contact page shows an "Email Us" button instead.
+- `NEWSLETTER_WEBHOOK_URL` receives `{ email, tags, source }`. The sign-up form stays hidden on the live site until this is set, so no sign-ups are lost.
+- `CONTACT_WEBHOOK_URL` receives `{ name, email, order, message, source }`. Without it, the contact page shows an "Email Us" button instead.
+
+Forms post straight from the shopper's browser, so use a webhook URL that's meant to be public (Zapier/Make "catch hook" URLs are).
 
 ---
 
@@ -241,13 +236,14 @@ app/
   cart/                       Full bag page
   checkout/                   Demo-mode checkout preview (live mode uses Shopify checkout)
   pages/[slug]/               About, Authenticity, FAQ, Contact, policies…
-  api/revalidate/             Shopify webhook → instant cache refresh
   sitemap.ts · robots.ts · manifest.ts · icon.svg
+.github/workflows/            GitHub Pages build + deploy
 components/                   Header, footer, product card, cart drawer, buy box, etc.
 lib/
   shopify/                    Storefront API client + GraphQL queries
-  commerce.ts                 Catalog API (Shopify or demo data)
-  cart.ts                     Cart server actions (Shopify Cart API)
+  commerce.ts                 Catalog API used at build time (Shopify or demo data)
+  cart.ts                     Bag, in the browser (Shopify Cart API)
+  config.ts                   Public settings (Shopify, base path, webhooks)
   demo-data.ts                Sample catalog for demo mode
   pages.tsx                   Content page copy
   site.ts                     Brand config
@@ -262,11 +258,10 @@ brand/                        Original brand board (identity, palette, packaging
 - [ ] Shopify credentials added and the demo banner is gone
 - [ ] Products tagged `men` / `women` / `unisex` / `gift-set`, with compare-at (retail) prices set
 - [ ] Product photos uploaded, and alt text and SEO fields filled in
-- [ ] `NEXT_PUBLIC_SITE_URL` set to your real domain
+- [ ] Pages source set to **GitHub Actions**, and `SITE_URL` set if you use a custom domain
 - [ ] Review the copy in `lib/pages.tsx` (shipping times, shipping regions, return window, sourcing claims) so it matches how you actually operate, and have the **Privacy Policy and Terms** reviewed (or replace them with Shopify's policy generator text)
 - [ ] Free-shipping threshold in `lib/site.ts` matches your Shopify shipping rates
 - [ ] Shopify checkout branding and payment methods (Shop Pay, Apple Pay, PayPal) set up
-- [ ] Webhooks pointed at `/api/revalidate`
 - [ ] Newsletter/contact webhooks set (optional)
 - [ ] Sitemap submitted to Google Search Console
 

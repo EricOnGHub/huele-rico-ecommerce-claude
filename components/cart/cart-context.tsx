@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
-import { addToCartAction, getCartAction, updateCartLineAction } from "@/lib/cart";
+import { addToCart, getCart, updateCartLine } from "@/lib/cart";
 import type { Cart } from "@/lib/types";
 
 type CartContextValue = {
@@ -24,13 +24,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
-    getCartAction().then(setCart).catch(() => setCart(null));
+    getCart().then(setCart).catch(() => setCart(null));
   }, []);
 
   const addItem = useCallback(async (variantId: string, quantity = 1) => {
     setError(null);
     try {
-      const next = await addToCartAction(variantId, quantity);
+      const next = await addToCart(variantId, quantity);
       startTransition(() => setCart(next));
       setOpen(true);
       return true;
@@ -44,7 +44,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateItem = useCallback(async (lineId: string, quantity: number) => {
     setError(null);
     try {
-      const next = await updateCartLineAction(lineId, quantity);
+      const next = await updateCartLine(lineId, quantity);
       startTransition(() => setCart(next));
     } catch {
       setError("Sorry, we couldn't update your bag. Please refresh and try again.");

@@ -5,7 +5,7 @@ import { CartDrawer } from "@/components/cart/cart-drawer";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { JsonLd } from "@/components/json-ld";
-import { isDemoMode } from "@/lib/commerce";
+import { isDemoMode } from "@/lib/config";
 import { absoluteUrl, site } from "@/lib/site";
 import "./globals.css";
 

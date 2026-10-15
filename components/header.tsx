@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { asset } from "@/lib/config";
 import { footerNav, mainNav } from "@/lib/site";
 import { useCart } from "./cart/cart-context";
 import { Bag, Chevron, Close, Menu, Search } from "./icons";
@@ -87,11 +88,11 @@ export function Header() {
               <form
                 role="search"
                 className="search-form"
-                action="/search"
+                action={asset("/search/")}
                 onSubmit={(e) => {
                   e.preventDefault();
                   const q = searchRef.current?.value.trim();
-                  if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+                  if (q) router.push(`/search/?q=${encodeURIComponent(q)}`);
                 }}
               >
                 <label htmlFor="q" className="sr-only">
@@ -118,7 +119,7 @@ export function Header() {
           <ul className="container">
             {mainNav.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} aria-current={pathname === item.href ? "page" : undefined}>
+                <Link href={item.href} aria-current={pathname.replace(/\/$/, "") === item.href ? "page" : undefined}>
                   {item.label}
                 </Link>
               </li>

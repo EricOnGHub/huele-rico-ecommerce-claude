@@ -1,4 +1,6 @@
-import "server-only";
+// Shopify Storefront API client. Runs at build time (catalog pages) and in the
+// browser (cart). The Storefront token is public by design.
+import { isShopifyConfigured, shopifyEndpoint, shopifyToken } from "@/lib/config";
 import type { Cart, Collection, Gender, Image, Product, ScentNotes } from "@/lib/types";
 import {
   addToCartMutation,
@@ -14,14 +16,7 @@ import {
   updateCartMutation,
 } from "./queries";
 
-const domain = (process.env.SHOPIFY_STORE_DOMAIN || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
-const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || "";
-const apiVersion = process.env.SHOPIFY_API_VERSION || "2026-07";
-const endpoint = `https://${domain}/api/${apiVersion}/graphql.json`;
-
-export const isShopifyConfigured = Boolean(domain && token && !domain.startsWith("your-store"));
-
-export const CATALOG_TAG = "products";
+export { isShopifyConfigured };
 
 type FetchOptions = {
   query: string;
@@ -35,14 +30,14 @@ export class ShopifyError extends Error {}
 export async function shopifyFetch<T>({ query, variables, cache }: FetchOptions): Promise<T> {
   if (!isShopifyConfigured) throw new ShopifyError("Shopify is not configured.");
 
-  const res = await fetch(endpoint, {
+  const res = await fetch(shopifyEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Shopify-Storefront-Access-Token": token,
+      "X-Shopify-Storefront-Access-Token": shopifyToken,
     },
     body: JSON.stringify({ query, variables }),
-    ...(cache ? { cache } : { next: { revalidate: 300, tags: [CATALOG_TAG] } }),
+    ...(cache ? { cache } : {}),
   });
 
   const body = (await res.json().catch(() => null)) as { data?: T; errors?: { message: string }[] } | null;

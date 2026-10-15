@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ContactForm } from "@/components/contact-form";
 import { Mail } from "@/components/icons";
 import { JsonLd } from "@/components/json-ld";
+import { contactWebhook } from "@/lib/config";
 import { faqs, pages } from "@/lib/pages";
 import { site } from "@/lib/site";
 
@@ -82,7 +83,7 @@ export default async function InfoPage({ params }: Props) {
                 </p>
                 <p className="script">Huele bien. Vive mejor.</p>
               </div>
-              {process.env.CONTACT_WEBHOOK_URL ? (
+              {contactWebhook ? (
                 <ContactForm />
               ) : (
                 <div className="callout" style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 12, padding: 24 }}>

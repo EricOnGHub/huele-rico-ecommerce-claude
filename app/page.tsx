@@ -4,13 +4,12 @@ import { Newsletter } from "@/components/newsletter";
 import { ProductGrid } from "@/components/product-grid";
 import { Seal } from "@/components/seal";
 import { Bag, Diamond, Gift, Globe, Ornament, Return, Shield, Truck } from "@/components/icons";
-import { getCollectionProducts, getProducts, isDemoMode } from "@/lib/commerce";
+import { getCollectionProducts, getProducts } from "@/lib/commerce";
+import { asset, isDemoMode, newsletterWebhook } from "@/lib/config";
 import { site } from "@/lib/site";
 
-export const revalidate = 300;
-
 // The sign-up form only shows once it has somewhere to send emails (or in demo mode).
-const newsletterEnabled = isDemoMode || Boolean(process.env.NEWSLETTER_WEBHOOK_URL);
+const newsletterEnabled = isDemoMode || Boolean(newsletterWebhook);
 
 export default async function HomePage() {
   const [bestSellers, newArrivals] = await Promise.all([
@@ -58,7 +57,7 @@ export default async function HomePage() {
           </div>
           <div className="hero-media">
             <Image
-              src="/images/signature-bottle.webp"
+              src={asset("/images/signature-bottle.webp")}
               alt="Huele Rico! signature plum perfume bottle with gold cap, orchid, amber and vanilla"
               width={540}
               height={745}
@@ -116,21 +115,21 @@ export default async function HomePage() {
           </div>
           <div className="cat-grid">
             <Link href="/collections/men" className="cat-tile">
-              <Image src="/images/para-el.webp" alt="" width={600} height={790} sizes="(max-width: 480px) 100vw, (max-width: 820px) 100vw, 33vw" />
+              <Image src={asset("/images/para-el.webp")} alt="" width={600} height={790} sizes="(max-width: 480px) 100vw, (max-width: 820px) 100vw, 33vw" />
               <p className="eyebrow">Para Él</p>
               <h3>Men&rsquo;s Cologne</h3>
               <p>Fresh, woody and bold — the scents that turn heads.</p>
               <span className="link-arrow">Shop For Him</span>
             </Link>
             <Link href="/collections/women" className="cat-tile">
-              <Image src="/images/para-ella.webp" alt="" width={600} height={790} sizes="(max-width: 480px) 100vw, (max-width: 820px) 50vw, 33vw" />
+              <Image src={asset("/images/para-ella.webp")} alt="" width={600} height={790} sizes="(max-width: 480px) 100vw, (max-width: 820px) 50vw, 33vw" />
               <p className="eyebrow">Para Ella</p>
               <h3>Women&rsquo;s Perfume</h3>
               <p>Floral, gourmand and radiant — luxury that feels like you.</p>
               <span className="link-arrow">Shop For Her</span>
             </Link>
             <Link href="/collections/gift-sets" className="cat-tile top-img">
-              <Image src="/images/mailer-box.webp" alt="" width={345} height={285} sizes="(max-width: 480px) 100vw, (max-width: 820px) 50vw, 33vw" />
+              <Image src={asset("/images/mailer-box.webp")} alt="" width={345} height={285} sizes="(max-width: 480px) 100vw, (max-width: 820px) 50vw, 33vw" />
               <p className="eyebrow">Regalos</p>
               <h3>Gift Sets</h3>
               <p>Beautiful products. Meaningful moments.</p>
@@ -161,7 +160,7 @@ export default async function HomePage() {
       {/* ───── Lifestyle ───── */}
       <section className="lifestyle-banner" aria-labelledby="community-title">
         <Image
-          src="/images/lifestyle-rooftop.webp"
+          src={asset("/images/lifestyle-rooftop.webp")}
           alt="Four friends in Huele Rico! plum hoodies and jackets laughing together on a city rooftop at sunset"
           width={1672}
           height={941}
@@ -243,7 +242,7 @@ export default async function HomePage() {
           </div>
           <div className="split-media small">
             <Image
-              src="/images/mailer-box.webp"
+              src={asset("/images/mailer-box.webp")}
               alt="Plum Huele Rico! mailer box printed with Autenticidad. Confianza. Esencia."
               width={345}
               height={285}
@@ -262,7 +261,7 @@ export default async function HomePage() {
                 <p className="eyebrow">Lo Nuevo</p>
                 <h2 id="new-title">New Arrivals</h2>
               </div>
-              <Link href="/collections/all?sort=newest" className="link-arrow">
+              <Link href="/collections/all" className="link-arrow">
                 Shop New
               </Link>
             </div>
@@ -275,9 +274,9 @@ export default async function HomePage() {
       <section className="section" aria-labelledby="gift-title">
         <div className="container split">
           <div className="gift-grid">
-            <Image src="/images/tissue-wrap.webp" alt="Huele Rico! monogram tissue paper with HR seal sticker" width={260} height={285} sizes="(max-width: 820px) 33vw, 200px" />
-            <Image src="/images/unboxing.webp" alt="Open plum gift box with monogram tissue inside" width={207} height={163} sizes="(max-width: 820px) 33vw, 200px" />
-            <Image src="/images/gift-card.webp" alt="Plum Huele Rico! gift card reading Descubre tu esencia" width={230} height={155} sizes="(max-width: 820px) 33vw, 200px" />
+            <Image src={asset("/images/tissue-wrap.webp")} alt="Huele Rico! monogram tissue paper with HR seal sticker" width={260} height={285} sizes="(max-width: 820px) 33vw, 200px" />
+            <Image src={asset("/images/unboxing.webp")} alt="Open plum gift box with monogram tissue inside" width={207} height={163} sizes="(max-width: 820px) 33vw, 200px" />
+            <Image src={asset("/images/gift-card.webp")} alt="Plum Huele Rico! gift card reading Descubre tu esencia" width={230} height={155} sizes="(max-width: 820px) 33vw, 200px" />
           </div>
           <div>
             <p className="eyebrow">Giftable Luxury</p>

@@ -1,10 +1,34 @@
 "use client";
 
-import { useActionState } from "react";
-import { subscribeAction, type NewsletterState } from "@/lib/newsletter";
+import { useState, type FormEvent } from "react";
+import { newsletterWebhook } from "@/lib/config";
+import { isEmail, postToWebhook } from "@/lib/webhook";
+
+type State = { ok: boolean; message: string } | null;
 
 export function Newsletter() {
-  const [state, action, pending] = useActionState<NewsletterState, FormData>(subscribeAction, null);
+  const [state, setState] = useState<State>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const el = e.currentTarget;
+    const form = new FormData(el);
+    if (form.get("company")) return setState({ ok: true, message: "¡Gracias! You're on the list." });
+    const email = String(form.get("email") || "").trim().toLowerCase();
+    if (!isEmail(email)) return setState({ ok: false, message: "Please enter a valid email address." });
+    setPending(true);
+    try {
+      if (newsletterWebhook) await postToWebhook(newsletterWebhook, { email, tags: "newsletter" });
+      setState({ ok: true, message: "¡Gracias! You're on the list." });
+      el.reset();
+    } catch {
+      setState({ ok: false, message: "Something went wrong. Please try again in a moment." });
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <div className="newsletter">
       <p className="eyebrow">Únete a la Familia</p>
@@ -12,7 +36,7 @@ export function Newsletter() {
       <p className="lead" style={{ margin: "0 auto" }}>
         Be first to know about restocks, new arrivals and members-only drops. Huele rico, paga menos — every week.
       </p>
-      <form action={action} noValidate>
+      <form onSubmit={onSubmit} noValidate>
         <label htmlFor="newsletter-email" className="sr-only">
           Email address
         </label>

@@ -52,6 +52,9 @@ export const footerNav = {
   ],
 } as const;
 
+/** Absolute URL for SEO tags. Page paths get a trailing slash to match the static export. */
 export function absoluteUrl(path = "/") {
-  return `${site.url}${path.startsWith("/") ? path : `/${path}`}`;
+  let p = path.startsWith("/") ? path : `/${path}`;
+  if (!p.endsWith("/") && !/\.[a-z0-9]+$/i.test(p)) p += "/";
+  return `${site.url}${p}`;
 }

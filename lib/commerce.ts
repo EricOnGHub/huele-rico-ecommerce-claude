@@ -1,8 +1,7 @@
-import "server-only";
 import { cache } from "react";
 import { demoCollections, demoProducts, demoRank } from "./demo-data";
+import { isDemoMode } from "./config";
 import {
-  isShopifyConfigured,
   sfGetCollection,
   sfGetCollectionProducts,
   sfGetCollections,
@@ -12,9 +11,10 @@ import {
   type CollectionSortKeys,
   type ProductSortKeys,
 } from "./shopify/client";
+import { searchProducts } from "./catalog-utils";
 import type { Collection, Product, SortKey } from "./types";
 
-export const isDemoMode = !isShopifyConfigured;
+export { isDemoMode };
 
 /**
  * Collections the site navigation links to. If you create a collection with the
@@ -31,20 +31,6 @@ const virtualCollections: Record<string, { query?: string; sort: ProductSortKeys
   "best-sellers": { sort: "BEST_SELLING" },
   "gift-sets": { query: "tag:gift-set OR product_type:'Gift Set'", sort: "BEST_SELLING" },
 };
-
-export const sortOptions: { value: SortKey; label: string }[] = [
-  { value: "featured", label: "Featured" },
-  { value: "best-selling", label: "Best Selling" },
-  { value: "price-asc", label: "Price: Low to High" },
-  { value: "price-desc", label: "Price: High to Low" },
-  { value: "newest", label: "New Arrivals" },
-  { value: "title", label: "A – Z" },
-];
-
-export function parseSort(v: string | string[] | undefined): SortKey {
-  const s = Array.isArray(v) ? v[0] : v;
-  return sortOptions.some((o) => o.value === s) ? (s as SortKey) : "featured";
-}
 
 function productSort(sort: SortKey, fallback: ProductSortKeys = "BEST_SELLING"): { sortKey: ProductSortKeys; reverse: boolean } {
   switch (sort) {
@@ -95,15 +81,7 @@ function demoFilter(handle: string): Product[] | null {
   }
 }
 
-function demoSearch(q: string) {
-  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
-  return demoProducts.filter((p) => {
-    const hay = [p.title, p.vendor, p.productType, p.description, ...p.tags, ...(p.notes ? [...p.notes.top, ...p.notes.heart, ...p.notes.base] : [])]
-      .join(" ")
-      .toLowerCase();
-    return terms.every((t) => hay.includes(t));
-  });
-}
+const demoSearch = (q: string) => searchProducts(demoProducts, q);
 
 /* ───────────── Public API ───────────── */
 

@@ -7,22 +7,20 @@ import { JsonLd } from "@/components/json-ld";
 import { BuyBox } from "@/components/product/buy-box";
 import { Gallery } from "@/components/product/gallery";
 import { ProductGrid } from "@/components/product-grid";
-import { getProduct, getProducts, getRecommendations, isDemoMode } from "@/lib/commerce";
+import { getProduct, getProducts, getRecommendations } from "@/lib/commerce";
+import { asset } from "@/lib/config";
 import { genderLabel, truncate } from "@/lib/format";
 import { absoluteUrl, site } from "@/lib/site";
 
 type Props = { params: Promise<{ handle: string }> };
 
-export const revalidate = 300;
+export const dynamicParams = false;
 
+// Every product page is generated at build time. New Shopify products appear
+// after the next build (the GitHub Pages workflow rebuilds on a schedule).
 export async function generateStaticParams() {
-  // Pre-render the catalog at build time; new Shopify products render on first visit.
-  try {
-    const products = await getProducts({ first: isDemoMode ? 100 : 50 });
-    return products.map((p) => ({ handle: p.handle }));
-  } catch {
-    return [];
-  }
+  const products = await getProducts({ first: 250 });
+  return products.map((p) => ({ handle: p.handle }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -39,12 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    alternates: { canonical: `/products/${handle}` },
+    alternates: { canonical: `/products/${handle}/` },
     openGraph: {
       type: "website",
       title: `${title} | ${site.name}`,
       description,
-      url: `/products/${handle}`,
+      url: `/products/${handle}/`,
       images: img ? [{ url: img.url, width: img.width, height: img.height, alt: img.altText }] : undefined,
     },
   };
@@ -63,7 +61,7 @@ export default async function ProductPage({ params }: Props) {
         ? { name: "For Her", href: "/collections/women" }
         : { name: "Unisex", href: "/collections/unisex" };
 
-  const url = absoluteUrl(`/products/${product.handle}`);
+  const url = absoluteUrl(`/products/${product.handle}/`);
   const priceValidUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString().slice(0, 10);
 
   return (
