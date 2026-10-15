@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function Logo({ asLink = true }: { asLink?: boolean }) {
+export function Logo({ asLink = true, href = "/" }: { asLink?: boolean; href?: string }) {
   const inner = (
     <>
       <span className="logo-word">
@@ -10,7 +10,7 @@ export function Logo({ asLink = true }: { asLink?: boolean }) {
     </>
   );
   return asLink ? (
-    <Link href="/" className="logo" aria-label="Huele Rico! Fragrances — home">
+    <Link href={href} className="logo" aria-label="Huele Rico! Fragrances">
       {inner}
     </Link>
   ) : (

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { useLang } from "@/lib/i18n/use-lang";
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const { t, lp } = useLang();
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -11,17 +13,17 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   return (
     <section className="section">
       <div className="container center">
-        <p className="eyebrow">Algo salió mal</p>
-        <h1>Something went wrong.</h1>
+        <p className="eyebrow">{t.error.eyebrow}</p>
+        <h1>{t.error.title}</h1>
         <p className="lead" style={{ margin: "0 auto 28px" }}>
-          We couldn&rsquo;t load this page right now. Please try again in a moment.
+          {t.error.body}
         </p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <div className="stack-sm" style={{ justifyContent: "center" }}>
           <button type="button" className="btn btn-primary" onClick={reset}>
-            Try Again
+            {t.error.retry}
           </button>
-          <Link href="/" className="btn btn-gold">
-            Back to Home
+          <Link href={lp("/")} className="btn btn-gold">
+            {t.notFound.home}
           </Link>
         </div>
       </div>

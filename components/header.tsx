@@ -1,21 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { asset } from "@/lib/config";
-import { footerNav, mainNav } from "@/lib/site";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { footerGroups, fmt, navItems } from "@/lib/i18n";
+import { useLang } from "@/lib/i18n/use-lang";
 import { useCart } from "./cart/cart-context";
 import { Bag, Chevron, Close, Menu, Search } from "./icons";
+import { LangSwitch } from "./lang-switch";
 import { Logo } from "./logo";
+import { PredictiveSearch } from "./predictive-search";
 
 export function Header() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname = usePathname() || "/";
+  const { lang, t, lp } = useLang();
   const { cart, open } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
 
   // Close menus on navigation.
   useEffect(() => {
@@ -24,29 +25,35 @@ export function Header() {
   }, [pathname]);
 
   useEffect(() => {
-    if (searchOpen) searchRef.current?.focus();
-  }, [searchOpen]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    if (!menuOpen && !searchOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        setSearchOpen(false);
+      }
+    };
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    if (menuOpen) document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [menuOpen]);
+  }, [menuOpen, searchOpen]);
 
   const count = cart?.totalQuantity || 0;
+  const nav = navItems(lang);
+  const help = footerGroups(lang)[1].links;
+  const current = (href: string) => pathname.replace(/\/$/, "") === href.replace(/\/$/, "");
 
   return (
     <>
       <div className="announce">
-        <strong>Free fast U.S. shipping</strong> on orders $50+
+        <strong>{t.announce.free}</strong> {t.announce.onOrders}
         <span className="hide-sm">
-          <span className="sep">✦</span>Envío rápido y gratis
-          <span className="sep">✦</span>100% Originales
+          <span className="sep">✦</span>
+          {t.announce.extra1}
+          <span className="sep">✦</span>
+          {t.announce.extra2}
         </span>
       </div>
       <header className="site-header">
@@ -55,7 +62,7 @@ export function Header() {
             <button
               type="button"
               className="icon-btn menu-toggle"
-              aria-label="Open menu"
+              aria-label={t.header.openMenu}
               aria-expanded={menuOpen}
               aria-controls="mobile-menu"
               onClick={() => setMenuOpen(true)}
@@ -65,17 +72,18 @@ export function Header() {
             <button
               type="button"
               className="icon-btn"
-              aria-label="Search fragrances"
+              aria-label={t.header.search}
               aria-expanded={searchOpen}
               aria-controls="site-search"
               onClick={() => setSearchOpen((v) => !v)}
             >
-              <Search />
+              {searchOpen ? <Close /> : <Search />}
             </button>
           </div>
-          <Logo />
+          <Logo href={lp("/")} />
           <div className="header-right">
-            <button type="button" className="icon-btn" onClick={open} aria-label={`Open bag, ${count} item${count === 1 ? "" : "s"}`}>
+            <LangSwitch className="desktop-only" />
+            <button type="button" className="icon-btn" onClick={open} aria-label={count === 1 ? t.header.openBagOne : fmt(t.header.openBag, { n: count })}>
               <Bag />
               {count > 0 && <span className="cart-count">{count}</span>}
             </button>
@@ -85,41 +93,16 @@ export function Header() {
         {searchOpen && (
           <div className="search-panel" id="site-search">
             <div className="container">
-              <form
-                role="search"
-                className="search-form"
-                action={asset("/search/")}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const q = searchRef.current?.value.trim();
-                  if (q) router.push(`/search/?q=${encodeURIComponent(q)}`);
-                }}
-              >
-                <label htmlFor="q" className="sr-only">
-                  Search by fragrance, brand or note
-                </label>
-                <input
-                  ref={searchRef}
-                  id="q"
-                  name="q"
-                  type="search"
-                  className="input"
-                  placeholder="Busca tu aroma — brand, scent or note…"
-                  autoComplete="off"
-                />
-                <button type="submit" className="btn btn-primary" aria-label="Search">
-                  <Search />
-                </button>
-              </form>
+              <PredictiveSearch autoFocus onNavigate={() => setSearchOpen(false)} />
             </div>
           </div>
         )}
 
-        <nav className="main-nav" aria-label="Main">
+        <nav className="main-nav" aria-label={t.header.mainNav}>
           <ul className="container">
-            {mainNav.map((item) => (
+            {nav.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} aria-current={pathname.replace(/\/$/, "") === item.href ? "page" : undefined}>
+                <Link href={item.href} aria-current={current(item.href) ? "page" : undefined}>
                   {item.label}
                 </Link>
               </li>
@@ -135,19 +118,19 @@ export function Header() {
         className={`drawer left ${menuOpen ? "open" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Menu"
+        aria-label={t.header.menu}
         aria-hidden={!menuOpen}
         inert={!menuOpen}
       >
         <div className="drawer-head">
-          <Logo />
-          <button type="button" className="icon-btn" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+          <Logo href={lp("/")} />
+          <button type="button" className="icon-btn" onClick={() => setMenuOpen(false)} aria-label={t.header.closeMenu}>
             <Close />
           </button>
         </div>
-        <nav className="drawer-body mobile-nav" aria-label="Mobile">
+        <nav className="drawer-body mobile-nav" aria-label={t.header.mobileNav}>
           <ul>
-            {mainNav.map((item) => (
+            {nav.map((item) => (
               <li key={item.href}>
                 <Link href={item.href}>
                   {item.label} <Chevron width={18} height={18} />
@@ -156,12 +139,15 @@ export function Header() {
             ))}
           </ul>
           <ul className="small-links" style={{ marginTop: 18 }}>
-            {[...footerNav.help, footerNav.about[0]].map((item) => (
+            {help.map((item) => (
               <li key={item.href}>
                 <Link href={item.href}>{item.label}</Link>
               </li>
             ))}
           </ul>
+          <div style={{ marginTop: 22 }}>
+            <LangSwitch className="lang-switch-lg" />
+          </div>
           <p className="script" style={{ marginTop: 28 }}>
             Huele bien. Vive mejor.
           </p>

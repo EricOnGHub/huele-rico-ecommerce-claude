@@ -12,6 +12,10 @@ export const site = {
   url: (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, ""),
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hola@huelerico.com",
   freeShippingThreshold: 50,
+  /** Business days, used by the delivery estimate on product pages. Keep in line with your shipping policy. */
+  shipping: { handlingDays: [1, 2] as [number, number], transitDays: [2, 5] as [number, number] },
+  /** WhatsApp number in international format, digits only (e.g. 15551234567). Leave empty to hide the chat button. */
+  whatsapp: (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "").replace(/\D/g, ""),
   social: {
     instagram: process.env.NEXT_PUBLIC_INSTAGRAM_URL || "",
     tiktok: process.env.NEXT_PUBLIC_TIKTOK_URL || "",
@@ -20,41 +24,10 @@ export const site = {
   hashtags: ["#HueleRico", "#SmellRichPayLess", "#PerfumesOriginales", "#AuthenticFragrance"],
 } as const;
 
-export const mainNav = [
-  { label: "Shop All", href: "/collections/all" },
-  { label: "For Him", href: "/collections/men" },
-  { label: "For Her", href: "/collections/women" },
-  { label: "Best Sellers", href: "/collections/best-sellers" },
-  { label: "Gift Sets", href: "/collections/gift-sets" },
-  { label: "Authenticity", href: "/pages/authenticity" },
-] as const;
-
-export const footerNav = {
-  shop: [
-    { label: "Shop All", href: "/collections/all" },
-    { label: "Para Él · For Him", href: "/collections/men" },
-    { label: "Para Ella · For Her", href: "/collections/women" },
-    { label: "Unisex", href: "/collections/unisex" },
-    { label: "Best Sellers", href: "/collections/best-sellers" },
-    { label: "Gift Sets", href: "/collections/gift-sets" },
-  ],
-  help: [
-    { label: "Shipping & Returns", href: "/pages/shipping-returns" },
-    { label: "FAQ", href: "/pages/faq" },
-    { label: "Contact · Contáctanos", href: "/pages/contact" },
-    { label: "Fragrance Care", href: "/pages/fragrance-care" },
-  ],
-  about: [
-    { label: "Our Story", href: "/pages/about" },
-    { label: "Authenticity Promise", href: "/pages/authenticity" },
-    { label: "Privacy Policy", href: "/pages/privacy" },
-    { label: "Terms of Service", href: "/pages/terms" },
-  ],
-} as const;
-
 /** Absolute URL for SEO tags. Page paths get a trailing slash to match the static export. */
 export function absoluteUrl(path = "/") {
-  let p = path.startsWith("/") ? path : `/${path}`;
+  const [raw, rest = ""] = path.split(/(?=[?#])/);
+  let p = raw.startsWith("/") ? raw : `/${raw}`;
   if (!p.endsWith("/") && !/\.[a-z0-9]+$/i.test(p)) p += "/";
-  return `${site.url}${p}`;
+  return `${site.url}${p}${rest}`;
 }

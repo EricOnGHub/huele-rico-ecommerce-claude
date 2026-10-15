@@ -4,11 +4,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, u
 import { addToCart, getCart, updateCartLine } from "@/lib/cart";
 import type { Cart } from "@/lib/types";
 
+type CartError = "add" | "update" | null;
+
 type CartContextValue = {
   cart: Cart | null;
   isOpen: boolean;
   pending: boolean;
-  error: string | null;
+  error: CartError;
   open: () => void;
   close: () => void;
   addItem: (variantId: string, quantity?: number) => Promise<boolean>;
@@ -20,7 +22,7 @@ const CartContext = createContext<CartContextValue | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [isOpen, setOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<CartError>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setOpen(true);
       return true;
     } catch {
-      setError("Sorry, we couldn't add that item. Please try again.");
+      setError("add");
       setOpen(true);
       return false;
     }
@@ -47,21 +49,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const next = await updateCartLine(lineId, quantity);
       startTransition(() => setCart(next));
     } catch {
-      setError("Sorry, we couldn't update your bag. Please refresh and try again.");
+      setError("update");
     }
   }, []);
 
   const value = useMemo(
-    () => ({
-      cart,
-      isOpen,
-      pending,
-      error,
-      open: () => setOpen(true),
-      close: () => setOpen(false),
-      addItem,
-      updateItem,
-    }),
+    () => ({ cart, isOpen, pending, error, open: () => setOpen(true), close: () => setOpen(false), addItem, updateItem }),
     [cart, isOpen, pending, error, addItem, updateItem],
   );
 

@@ -1,7 +1,8 @@
 // Shopify Storefront API client. Runs at build time (catalog pages) and in the
 // browser (cart). The Storefront token is public by design.
 import { isShopifyConfigured, shopifyEndpoint, shopifyToken } from "@/lib/config";
-import type { Cart, Collection, Gender, Image, Product, ScentNotes } from "@/lib/types";
+import { buildProfile } from "@/lib/scent";
+import type { Cart, Collection, Gender, Image, Lang, Product, ScentNotes } from "@/lib/types";
 import {
   addToCartMutation,
   createCartMutation,
@@ -58,7 +59,7 @@ type MetafieldValue = { value: string } | null;
 
 type ShopifyProduct = Omit<
   Product,
-  "variants" | "images" | "options" | "gender" | "notes" | "demoArt"
+  "variants" | "images" | "options" | "gender" | "notes" | "demoArt" | "profile"
 > & {
   variants: Edges<Product["variants"][number]>;
   images: Edges<Image>;
@@ -67,6 +68,11 @@ type ShopifyProduct = Omit<
   notesHeart: MetafieldValue;
   notesBase: MetafieldValue;
   gender: MetafieldValue;
+  scentFamily: MetafieldValue;
+  longevity: MetafieldValue;
+  sillage: MetafieldValue;
+  season: MetafieldValue;
+  timeOfDay: MetafieldValue;
 };
 
 /** Accepts a JSON list metafield (`["Bergamot","Pepper"]`) or a comma-separated text metafield. */
@@ -107,6 +113,13 @@ function reshapeProduct(p: ShopifyProduct | null): Product | null {
       : images[0] || null,
     gender: detectGender(p),
     notes,
+    profile: buildProfile(notes, p.productType, {
+      family: p.scentFamily?.value,
+      longevity: p.longevity?.value,
+      sillage: p.sillage?.value,
+      season: p.season?.value,
+      time: p.timeOfDay?.value,
+    }),
   };
 }
 
@@ -123,21 +136,29 @@ function reshapeCart(c: ShopifyCart): Cart {
 export type ProductSortKeys = "RELEVANCE" | "BEST_SELLING" | "PRICE" | "CREATED_AT" | "TITLE";
 export type CollectionSortKeys = "COLLECTION_DEFAULT" | "BEST_SELLING" | "PRICE" | "CREATED" | "TITLE";
 
-export async function sfGetProduct(handle: string) {
-  const data = await shopifyFetch<{ product: ShopifyProduct | null }>({ query: getProductQuery, variables: { handle } });
+const language = (lang: Lang) => lang.toUpperCase();
+
+export async function sfGetProduct(handle: string, lang: Lang = "en") {
+  const data = await shopifyFetch<{ product: ShopifyProduct | null }>({
+    query: getProductQuery,
+    variables: { handle, language: language(lang) },
+  });
   return reshapeProduct(data.product);
 }
 
-export async function sfGetProducts(opts: { query?: string; sortKey?: ProductSortKeys; reverse?: boolean; first?: number }) {
+export async function sfGetProducts(opts: { query?: string; sortKey?: ProductSortKeys; reverse?: boolean; first?: number; lang?: Lang }) {
   const data = await shopifyFetch<{ products: Edges<ShopifyProduct> }>({
     query: getProductsQuery,
-    variables: { query: opts.query, sortKey: opts.sortKey, reverse: opts.reverse, first: opts.first ?? 100 },
+    variables: { query: opts.query, sortKey: opts.sortKey, reverse: opts.reverse, first: opts.first ?? 100, language: language(opts.lang || "en") },
   });
   return reshapeProducts(flatten(data.products));
 }
 
-export async function sfGetCollection(handle: string): Promise<Collection | null> {
-  const data = await shopifyFetch<{ collection: Collection | null }>({ query: getCollectionQuery, variables: { handle } });
+export async function sfGetCollection(handle: string, lang: Lang = "en"): Promise<Collection | null> {
+  const data = await shopifyFetch<{ collection: Collection | null }>({
+    query: getCollectionQuery,
+    variables: { handle, language: language(lang) },
+  });
   return data.collection;
 }
 
@@ -146,24 +167,25 @@ export async function sfGetCollectionProducts(opts: {
   sortKey?: CollectionSortKeys;
   reverse?: boolean;
   first?: number;
+  lang?: Lang;
 }) {
   const data = await shopifyFetch<{ collection: { products: Edges<ShopifyProduct> } | null }>({
     query: getCollectionProductsQuery,
-    variables: { handle: opts.handle, sortKey: opts.sortKey, reverse: opts.reverse, first: opts.first ?? 100 },
+    variables: { handle: opts.handle, sortKey: opts.sortKey, reverse: opts.reverse, first: opts.first ?? 100, language: language(opts.lang || "en") },
   });
   if (!data.collection) return null;
   return reshapeProducts(flatten(data.collection.products));
 }
 
-export async function sfGetCollections(): Promise<Collection[]> {
-  const data = await shopifyFetch<{ collections: Edges<Collection> }>({ query: getCollectionsQuery });
+export async function sfGetCollections(lang: Lang = "en"): Promise<Collection[]> {
+  const data = await shopifyFetch<{ collections: Edges<Collection> }>({ query: getCollectionsQuery, variables: { language: language(lang) } });
   return flatten(data.collections);
 }
 
-export async function sfGetRecommendations(productId: string) {
+export async function sfGetRecommendations(productId: string, lang: Lang = "en") {
   const data = await shopifyFetch<{ productRecommendations: ShopifyProduct[] | null }>({
     query: getProductRecommendationsQuery,
-    variables: { productId },
+    variables: { productId, language: language(lang) },
   });
   return reshapeProducts(data.productRecommendations || []);
 }

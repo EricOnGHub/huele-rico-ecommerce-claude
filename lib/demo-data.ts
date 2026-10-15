@@ -3,7 +3,8 @@
 // Once the Shopify store domain + Storefront token are set, every
 // page reads live products from Shopify and this file is ignored.
 
-import type { Collection, Gender, Product, ScentNotes } from "./types";
+import { buildProfile } from "./scent";
+import type { Collection, Gender, Lang, Product, ScentNotes } from "./types";
 
 type Size = { size: string; price: number; retail: number; available?: boolean };
 
@@ -334,10 +335,41 @@ function build(seed: Seed): Product {
     seo: { title: null, description: null },
     updatedAt: new Date(NOW - seed.createdDaysAgo * 86_400_000).toISOString(),
     demoArt: seed.art,
+    profile: buildProfile(seed.notes, seed.productType),
   };
 }
 
 export const demoProducts: Product[] = seeds.map(build);
+
+/** Spanish copy for the sample catalog (Shopify stores use Translate & Adapt instead). */
+const descriptionsEs: Record<string, string> = {
+  "dior-sauvage-eau-de-toilette": "Una composición radicalmente fresca: cruda, noble y magnética. La bergamota de Calabria se une al ambroxan para una estela que hace girar cabezas, de la oficina a la azotea.",
+  "versace-eros-eau-de-toilette": "Amor, pasión y deseo en una botella. Menta fresca y manzana verde se abren a haba tonka y vainilla: segura, dulce e imposible de ignorar.",
+  "carolina-herrera-good-girl-eau-de-parfum": "Qué rico es ser mala. Jazmín sambac y nardo envueltos en tonka tostada y cacao: una firma audaz y sensual en el icónico tacón.",
+  "maison-francis-kurkdjian-baccarat-rouge-540": "Luminoso y denso, Baccarat Rouge 540 se posa en la piel como una brisa ambarada, floral y amaderada. El aroma por el que todos preguntan, ahora por debajo del precio de tienda.",
+  "lancome-la-vie-est-belle-eau-de-parfum": "Una declaración de felicidad. Iris, pachulí y praliné crean un gourmand dulce y radiante que se siente como un abrazo.",
+  "jean-paul-gaultier-le-male-elixir": "El marinero va por el oro. Lavanda, miel y haba tonka se funden en un elixir ambarado y amaderado, hecho para la noche.",
+  "ysl-libre-eau-de-parfum": "El aroma de la libertad. Lavanda francesa y azahar marroquí brillan sobre una base cálida de vainilla y almizcle.",
+  "giorgio-armani-acqua-di-gio-profondo": "Sumérgete. Notas marinas, bergamota y romero aromático sobre pachulí y almizcle mineral: fresco, limpio y para usar todos los días.",
+  "ariana-grande-cloud-eau-de-parfum": "Soñadora y adictiva. Flor de lavanda y pera con crema batida y praliné: una nube dulce, acogedora y juguetona a un precio fácil.",
+  "ysl-y-eau-de-parfum": "Para quienes se atreven a decir sí. Manzana crujiente y jengibre con salvia y una base profunda de tonka y ámbar. Lo fresco se encuentra con lo intenso.",
+  "marc-jacobs-daisy-eau-de-toilette": "Fresca, femenina y encantadora. Frutos rojos, hojas de violeta y jazmín sobre una base suave de almizcle y vainilla.",
+  "le-labo-santal-33": "El clásico de culto. Sándalo australiano, cardamomo y cuero crean una firma ahumada e íntima que es de todos.",
+  "valentino-born-in-roma-donna": "El espíritu couture de Roma. Jazmín, grosella negra y vainilla bourbon en un frasco con tachuelas: moderno, romántico y audaz.",
+  "viktor-rolf-spicebomb-extreme": "Una mezcla explosiva y adictiva de pimienta negra, canela y tabaco sobre vainilla ahumada. Cálida, intensa y hecha para noches frescas.",
+  "versace-eros-gift-set": "El regalo perfecto. Eros Eau de Toilette 3.4 oz, spray de viaje 0.3 oz y gel de baño perfumado, listo para regalar en nuestro empaque exclusivo.",
+  "carolina-herrera-good-girl-gift-set": "Regálale el tacón. Good Girl Eau de Parfum 2.7 oz, spray de viaje y loción corporal, en caja de regalo para cumpleaños, Navidad y el Día de las Madres.",
+};
+
+export function demoProductsFor(lang: Lang): Product[] {
+  if (lang === "en") return demoProducts;
+  return demoProducts.map((p) => {
+    const d = descriptionsEs[p.handle];
+    return d
+      ? { ...p, description: d, descriptionHtml: `<p>${d}</p><p>100% auténtico, de distribuidores autorizados. Sellado de fábrica.</p>` }
+      : p;
+  });
+}
 
 export const demoRank = (p: Product) => seeds.find((s) => s.handle === p.handle)?.rank ?? 999;
 

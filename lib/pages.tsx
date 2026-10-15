@@ -4,6 +4,8 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { faqsEs, pagesEs } from "./pages-es";
+import type { Lang } from "./types";
 import { site } from "./site";
 
 export type FaqItem = { q: string; a: string };
@@ -47,7 +49,7 @@ export const faqs: FaqItem[] = [
   },
 ];
 
-type Page = {
+export type Page = {
   title: string;
   eyebrow: string;
   description: string;
@@ -300,3 +302,6 @@ export const pages: Record<string, Page> = {
     ),
   },
 };
+
+export const getPages = (lang: Lang) => (lang === "es" ? pagesEs : pages);
+export const getFaqs = (lang: Lang) => (lang === "es" ? faqsEs : faqs);

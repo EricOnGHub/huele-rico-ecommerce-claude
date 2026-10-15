@@ -2,11 +2,13 @@
 
 import { useState, type FormEvent } from "react";
 import { newsletterWebhook } from "@/lib/config";
+import { useLang } from "@/lib/i18n/use-lang";
 import { isEmail, postToWebhook } from "@/lib/webhook";
 
 type State = { ok: boolean; message: string } | null;
 
 export function Newsletter() {
+  const { t } = useLang();
   const [state, setState] = useState<State>(null);
   const [pending, setPending] = useState(false);
 
@@ -14,16 +16,16 @@ export function Newsletter() {
     e.preventDefault();
     const el = e.currentTarget;
     const form = new FormData(el);
-    if (form.get("company")) return setState({ ok: true, message: "¡Gracias! You're on the list." });
+    if (form.get("company")) return setState({ ok: true, message: t.newsletter.thanks });
     const email = String(form.get("email") || "").trim().toLowerCase();
-    if (!isEmail(email)) return setState({ ok: false, message: "Please enter a valid email address." });
+    if (!isEmail(email)) return setState({ ok: false, message: t.newsletter.invalid });
     setPending(true);
     try {
       if (newsletterWebhook) await postToWebhook(newsletterWebhook, { email, tags: "newsletter" });
-      setState({ ok: true, message: "¡Gracias! You're on the list." });
+      setState({ ok: true, message: t.newsletter.thanks });
       el.reset();
     } catch {
-      setState({ ok: false, message: "Something went wrong. Please try again in a moment." });
+      setState({ ok: false, message: t.newsletter.error });
     } finally {
       setPending(false);
     }
@@ -31,19 +33,19 @@ export function Newsletter() {
 
   return (
     <div className="newsletter">
-      <p className="eyebrow">Únete a la Familia</p>
-      <h2 id="news-title">Get early access to drops &amp; deals</h2>
+      <p className="eyebrow">{t.newsletter.eyebrow}</p>
+      <h2 id="news-title">{t.newsletter.title}</h2>
       <p className="lead" style={{ margin: "0 auto" }}>
-        Be first to know about restocks, new arrivals and members-only drops. Huele rico, paga menos — every week.
+        {t.newsletter.body}
       </p>
       <form onSubmit={onSubmit} noValidate>
         <label htmlFor="newsletter-email" className="sr-only">
-          Email address
+          {t.newsletter.label}
         </label>
-        <input id="newsletter-email" name="email" type="email" required autoComplete="email" placeholder="Your email · Tu correo" className="input" />
+        <input id="newsletter-email" name="email" type="email" required autoComplete="email" placeholder={t.newsletter.placeholder} className="input" />
         <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ display: "none" }} />
         <button type="submit" className="btn btn-gold" style={{ background: "var(--champagne-gold)", color: "var(--plum-deep)" }} disabled={pending}>
-          {pending ? "Joining…" : "Join Now"}
+          {pending ? t.newsletter.joining : t.newsletter.join}
         </button>
       </form>
       {state && (

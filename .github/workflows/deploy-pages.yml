@@ -62,6 +62,7 @@ jobs:
           NEXT_PUBLIC_FACEBOOK_URL: ${{ vars.FACEBOOK_URL }}
           NEXT_PUBLIC_NEWSLETTER_WEBHOOK_URL: ${{ vars.NEWSLETTER_WEBHOOK_URL }}
           NEXT_PUBLIC_CONTACT_WEBHOOK_URL: ${{ vars.CONTACT_WEBHOOK_URL }}
+          NEXT_PUBLIC_WHATSAPP_NUMBER: ${{ vars.WHATSAPP_NUMBER }}
 
       - run: touch out/.nojekyll
 

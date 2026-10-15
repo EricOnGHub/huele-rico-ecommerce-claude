@@ -6,7 +6,7 @@ A fast, mobile-first, SEO-optimized e-commerce site for selling 100% authentic d
 
 The site builds to plain static files, so it's hosted free on **GitHub Pages**. A GitHub Action rebuilds and publishes it on every change to `main` and every 6 hours, so product, price and stock updates from Shopify show up automatically.
 
-The site is written in English with Spanish mixed in (*Para Él / Para Ella, Descubre tu aroma, 100% original o te devolvemos tu dinero*) and follows the brand board in [`/brand`](./brand): Royal Plum, Champagne Gold and Soft Ivory, with Playfair Display, Montserrat and Inter type.
+The site is fully bilingual: English at the root and a complete Spanish version under `/es/`, with an EN | ES switch in the header, and English pages keep some Spanish flair (*Para Él / Para Ella, Descubre tu aroma*). It follows the brand board in [`/brand`](./brand): Royal Plum, Champagne Gold and Soft Ivory, with Playfair Display, Montserrat and Inter type.
 
 ---
 
@@ -29,11 +29,14 @@ The site is written in English with Spanish mixed in (*Para Él / Para Ella, Des
 
 | Area | Details |
 | --- | --- |
-| **Home** | Hero ("Huele Rico, Paga Menos!"), trust bar, shop by category (Para Él / Para Ella / Regalos), Best Sellers, rooftop lifestyle banner, Brand Essence, authenticity promise, New Arrivals, gifting, newsletter + hashtags |
-| **Collections** | `/collections/all`, `men`, `women`, `unisex`, `best-sellers` and `gift-sets`, plus any collection you create in Shopify. Sort (best selling, price, newest, A–Z) and filter by brand |
-| **Product pages** | Image gallery, size selector, quantity, sale price vs. retail with "Save X%", fragrance notes (top/heart/base), authenticity and shipping assurances, how-to-wear, related products, and a sticky "Add to Bag" bar on mobile |
-| **Cart** | Slide-out bag drawer and full `/cart` page, free-shipping progress meter, quantity changes, then **Shopify's secure checkout** (Shop Pay, Apple Pay, Google Pay, cards) |
-| **Search** | Instant search across brand, name, type, tags and scent notes |
+| **Home** | Hero ("Huele Rico, Paga Menos!"), trust bar, shop by category (Para Él / Para Ella / Regalos), Best Sellers, scent quiz + shop by scent family, rooftop lifestyle banner, Brand Essence, authenticity promise, New Arrivals, recently viewed, gifting, newsletter + hashtags |
+| **Collections** | `/collections/all`, `men`, `women`, `unisex`, `best-sellers` and `gift-sets`, plus any collection you create in Shopify. Sorting and a filter panel (scent family, for him/her, concentration, bottle size, price, brand, in stock) that opens as a bottom sheet on phones. Filtered views have shareable links |
+| **Product pages** | Image gallery, size selector, quantity, sale price vs. retail with "Save X%", **scent profile** (family, longevity, projection, best seasons, day/night), fragrance notes, **delivery date estimate**, **"Notify me" for sold-out sizes**, "How we verify every bottle", **"Smells similar"** picks with the notes they share, "You may also like", recently viewed, and a sticky "Add to Bag" bar on mobile |
+| **Scent quiz** | `/quiz`: five quick questions (who it's for, favorite scent families, occasion, intensity, budget) → three matches with a match % and the reasons |
+| **Cart** | Slide-out bag drawer and full `/cart` page, free-shipping progress meter, quantity changes, "Complete the gift" add-on suggestions, then **Shopify's secure checkout** (Shop Pay, Apple Pay, Google Pay, cards) |
+| **Search** | Suggestions as you type (products + brands) that forgive typos ("savage" finds Sauvage), plus a full results page |
+| **Español** | Every page in Spanish under `/es/` with its own SEO tags and hreflang links, an EN \| ES switch, Spanish policies and FAQ |
+| **WhatsApp** | Optional floating chat button with a pre-filled message about the page the shopper is on |
 | **Content pages** | Our Story, Authenticity Promise, Shipping & Returns, FAQ, Fragrance Care, Contact, Privacy Policy, Terms of Service |
 | **SEO** | Per-page titles and descriptions, canonical URLs, Open Graph/Twitter cards, `sitemap.xml`, `robots.txt`, and structured data (Product with offers, shipping and return policy; Breadcrumbs; FAQ; Organization; WebSite search box) |
 | **Demo mode** | Runs with a sample catalog until you add Shopify credentials, so you can preview everything now |
@@ -75,6 +78,7 @@ The workflow in [`.github/workflows/deploy-pages.yml`](./.github/workflows/deplo
    | Variable (optional) | `SHOPIFY_API_VERSION` | e.g. `2026-07` |
    | Variable (optional) | `CONTACT_EMAIL`, `INSTAGRAM_URL`, `TIKTOK_URL`, `FACEBOOK_URL` | Your details |
    | Variable (optional) | `NEWSLETTER_WEBHOOK_URL`, `CONTACT_WEBHOOK_URL` | See [Customizing](#customizing) |
+   | Variable (optional) | `WHATSAPP_NUMBER` | Shows the WhatsApp chat button, e.g. `15551234567` |
 
    Without the Shopify values, the site publishes in **demo mode** with the sample catalog.
 3. **Actions → Deploy to GitHub Pages → Run workflow** (or push to `main`).
@@ -144,16 +148,27 @@ Tags decide which category a product appears in:
 
 If you'd rather curate a collection by hand, create a Shopify collection with the **same handle** (`men`, `women`, `unisex`, `best-sellers`, `gift-sets`). The site will use that collection's products, title and description instead of the tag rule. Any other collection you create appears at `/collections/<handle>` and in the sitemap.
 
-### Fragrance notes (optional)
+### Fragrance notes and scent profile (recommended)
 
-To show the Top / Heart / Base notes boxes, go to **Settings → Custom data → Products** and add these metafield definitions. Set the type to **List of single line text** (or single line text, comma-separated), and **check "Storefront API access"**:
+Notes power the notes boxes, the scent profile, "Smells similar", filters by scent family and the quiz. Go to **Settings → Custom data → Products** and add these metafield definitions, each with **"Storefront API access"** checked:
 
-| Name | Namespace and key |
-| --- | --- |
-| Top notes | `custom.top_notes` |
-| Heart notes | `custom.heart_notes` |
-| Base notes | `custom.base_notes` |
-| Gender (optional; overrides tags) | `custom.gender` (`men`, `women` or `unisex`) |
+| Name | Namespace and key | Type |
+| --- | --- | --- |
+| Top notes | `custom.top_notes` | List of single line text |
+| Heart notes | `custom.heart_notes` | List of single line text |
+| Base notes | `custom.base_notes` | List of single line text |
+| Gender (optional; overrides tags) | `custom.gender` | Single line text: `men`, `women` or `unisex` |
+| Scent family (optional) | `custom.scent_family` | List of single line text: `fresh`, `floral`, `woody`, `sweet`, `spicy` |
+| Longevity (optional) | `custom.longevity` | Integer 1–5 (1 ≈ 2–3 h, 5 ≈ 10 h+) |
+| Projection (optional) | `custom.sillage` | Integer 1–5 (1 = skin scent, 5 = fills the room) |
+| Seasons (optional) | `custom.season` | List: `spring`, `summer`, `fall`, `winter` |
+| Time of day (optional) | `custom.time_of_day` | List: `day`, `night` |
+
+You only *need* the three notes fields: the site works out scent family, longevity, projection, seasons and day/night from the notes and the concentration. Fill in the optional fields whenever you want to set them yourself.
+
+### Spanish product text
+
+Spanish pages use Shopify's translations automatically. Install the free **Translate & Adapt** app, add **Spanish** under **Settings → Languages**, and translate product titles, descriptions and collections there. Anything not translated shows in English.
 
 ### Product photos
 
@@ -181,7 +196,7 @@ Already built in:
 - **Open Graph and Twitter cards**, so links shared on Instagram, WhatsApp, iMessage and Facebook show a rich preview (product photo or the rooftop lifestyle image).
 - **Performance:** every page is pre-built static HTML served from GitHub's CDN, with self-hosted fonts and lightweight WebP images.
 - **Semantic, accessible HTML:** one H1 per page, landmarks, alt text, keyboard support and visible focus states.
-- **Bilingual keywords:** *perfumes originales, lociones originales, para él, para ella*.
+- **Bilingual SEO:** every page exists in English and Spanish with `hreflang` links (in the HTML and the sitemap), so Google shows each shopper the right language.
 
 After launch:
 
@@ -214,11 +229,15 @@ The layout is mobile-first and tested at phone widths (390 px):
 | About, Authenticity, Shipping, FAQ, Privacy and Terms copy | [`lib/pages.tsx`](./lib/pages.tsx) |
 | Announcement bar text | [`components/header.tsx`](./components/header.tsx) |
 | Images | [`public/images`](./public/images): replace the files, keeping the same names |
+| English / Spanish interface text | [`lib/i18n/en.ts`](./lib/i18n/en.ts) and [`lib/i18n/es.ts`](./lib/i18n/es.ts) |
+| Spanish info pages and FAQ | [`lib/pages-es.tsx`](./lib/pages-es.tsx) |
+| Delivery estimate (handling + transit days) | `shipping` in [`lib/site.ts`](./lib/site.ts). Keep it in line with your shipping policy |
+| WhatsApp chat button | `WHATSAPP_NUMBER` repository variable (digits with country code, e.g. `15551234567`) |
 | Social links | `INSTAGRAM_URL`, `TIKTOK_URL`, `FACEBOOK_URL` repository variables |
 
 **Newsletter and contact form.** These send submissions as JSON to any webhook you choose (Klaviyo, Shopify Flow, Zapier, Make, etc.):
 
-- `NEWSLETTER_WEBHOOK_URL` receives `{ email, tags, source }`. The sign-up form stays hidden on the live site until this is set, so no sign-ups are lost.
+- `NEWSLETTER_WEBHOOK_URL` receives `{ email, tags, source }`. The sign-up form stays hidden on the live site until this is set, so no sign-ups are lost. "Notify me when it's back" sign-ups go to the same URL with `tags: "back-in-stock"` plus `product` and `variant`, so you can route them to a restock list.
 - `CONTACT_WEBHOOK_URL` receives `{ name, email, order, message, source }`. Without it, the contact page shows an "Email Us" button instead.
 
 Forms post straight from the shopper's browser, so use a webhook URL that's meant to be public (Zapier/Make "catch hook" URLs are).
@@ -229,14 +248,12 @@ Forms post straight from the shopper's browser, so use a webhook URL that's mean
 
 ```
 app/
-  page.tsx                    Home
-  collections/[handle]/       Collection pages (sort + brand filter)
-  products/[handle]/          Product pages (+ Product JSON-LD)
-  search/                     Search results
-  cart/                       Full bag page
-  checkout/                   Demo-mode checkout preview (live mode uses Shopify checkout)
-  pages/[slug]/               About, Authenticity, FAQ, Contact, policies…
+  (en)/                       English routes (site root): home, collections, products,
+                              pages, quiz, search, cart, checkout
+  es/                         The same routes in Spanish (/es/…)
+  search-index.json/          Compact catalog for instant search + bag suggestions
   sitemap.ts · robots.ts · manifest.ts · icon.svg
+views/                        Page layouts shared by both languages
 .github/workflows/            GitHub Pages build + deploy
 components/                   Header, footer, product card, cart drawer, buy box, etc.
 lib/
@@ -244,6 +261,10 @@ lib/
   commerce.ts                 Catalog API used at build time (Shopify or demo data)
   cart.ts                     Bag, in the browser (Shopify Cart API)
   config.ts                   Public settings (Shopify, base path, webhooks)
+  scent.ts                    Scent profiles, "smells similar", typo-tolerant search
+  catalog-utils.ts            Sorting and filters
+  i18n/                       English + Spanish interface text and helpers
+  pages-es.tsx                Spanish info pages
   demo-data.ts                Sample catalog for demo mode
   pages.tsx                   Content page copy
   site.ts                     Brand config

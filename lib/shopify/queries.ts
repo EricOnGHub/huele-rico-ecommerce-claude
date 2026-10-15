@@ -58,6 +58,11 @@ const productFragment = /* GraphQL */ `
     notesHeart: metafield(namespace: "custom", key: "heart_notes") { value }
     notesBase: metafield(namespace: "custom", key: "base_notes") { value }
     gender: metafield(namespace: "custom", key: "gender") { value }
+    scentFamily: metafield(namespace: "custom", key: "scent_family") { value }
+    longevity: metafield(namespace: "custom", key: "longevity") { value }
+    sillage: metafield(namespace: "custom", key: "sillage") { value }
+    season: metafield(namespace: "custom", key: "season") { value }
+    timeOfDay: metafield(namespace: "custom", key: "time_of_day") { value }
   }
   ${imageFragment}
 `;
@@ -99,14 +104,14 @@ const cartFragment = /* GraphQL */ `
 `;
 
 export const getProductQuery = /* GraphQL */ `
-  query getProduct($handle: String!) {
+  query getProduct($handle: String!, $language: LanguageCode) @inContext(language: $language) {
     product(handle: $handle) { ...product }
   }
   ${productFragment}
 `;
 
 export const getProductsQuery = /* GraphQL */ `
-  query getProducts($query: String, $sortKey: ProductSortKeys, $reverse: Boolean, $first: Int!) {
+  query getProducts($query: String, $sortKey: ProductSortKeys, $reverse: Boolean, $first: Int!, $language: LanguageCode) @inContext(language: $language) {
     products(query: $query, sortKey: $sortKey, reverse: $reverse, first: $first) {
       edges { node { ...product } }
     }
@@ -115,7 +120,7 @@ export const getProductsQuery = /* GraphQL */ `
 `;
 
 export const getCollectionQuery = /* GraphQL */ `
-  query getCollection($handle: String!) {
+  query getCollection($handle: String!, $language: LanguageCode) @inContext(language: $language) {
     collection(handle: $handle) {
       handle
       title
@@ -132,7 +137,8 @@ export const getCollectionProductsQuery = /* GraphQL */ `
     $sortKey: ProductCollectionSortKeys
     $reverse: Boolean
     $first: Int!
-  ) {
+    $language: LanguageCode
+  ) @inContext(language: $language) {
     collection(handle: $handle) {
       products(sortKey: $sortKey, reverse: $reverse, first: $first) {
         edges { node { ...product } }
@@ -143,7 +149,7 @@ export const getCollectionProductsQuery = /* GraphQL */ `
 `;
 
 export const getCollectionsQuery = /* GraphQL */ `
-  query getCollections {
+  query getCollections($language: LanguageCode) @inContext(language: $language) {
     collections(first: 100, sortKey: TITLE) {
       edges {
         node {
@@ -159,7 +165,7 @@ export const getCollectionsQuery = /* GraphQL */ `
 `;
 
 export const getProductRecommendationsQuery = /* GraphQL */ `
-  query getProductRecommendations($productId: ID!) {
+  query getProductRecommendations($productId: ID!, $language: LanguageCode) @inContext(language: $language) {
     productRecommendations(productId: $productId) { ...product }
   }
   ${productFragment}

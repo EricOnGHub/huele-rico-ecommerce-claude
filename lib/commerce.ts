@@ -1,6 +1,11 @@
+// Catalog API used at build time. Reads Shopify when configured, otherwise the
+// sample catalog. Every page is pre-built, so these run during `npm run build`.
+
 import { cache } from "react";
-import { demoCollections, demoProducts, demoRank } from "./demo-data";
 import { isDemoMode } from "./config";
+import { demoCollections, demoProductsFor, demoRank } from "./demo-data";
+import { collectionCopy } from "./i18n";
+import { similarScents, toSummary } from "./scent";
 import {
   sfGetCollection,
   sfGetCollectionProducts,
@@ -8,11 +13,9 @@ import {
   sfGetProduct,
   sfGetProducts,
   sfGetRecommendations,
-  type CollectionSortKeys,
   type ProductSortKeys,
 } from "./shopify/client";
-import { searchProducts } from "./catalog-utils";
-import type { Collection, Product, SortKey } from "./types";
+import type { Collection, Lang, Product, ProductSummary } from "./types";
 
 export { isDemoMode };
 
@@ -23,7 +26,7 @@ export { isDemoMode };
  *
  * Tag your Shopify products with `men`, `women`, `unisex` and `gift-set`.
  */
-const virtualCollections: Record<string, { query?: string; sort: ProductSortKeys; reverse?: boolean }> = {
+const virtualCollections: Record<string, { query?: string; sort: ProductSortKeys }> = {
   all: { sort: "BEST_SELLING" },
   men: { query: "tag:men OR tag:unisex", sort: "BEST_SELLING" },
   women: { query: "tag:women OR tag:unisex", sort: "BEST_SELLING" },
@@ -32,111 +35,90 @@ const virtualCollections: Record<string, { query?: string; sort: ProductSortKeys
   "gift-sets": { query: "tag:gift-set OR product_type:'Gift Set'", sort: "BEST_SELLING" },
 };
 
-function productSort(sort: SortKey, fallback: ProductSortKeys = "BEST_SELLING"): { sortKey: ProductSortKeys; reverse: boolean } {
-  switch (sort) {
-    case "best-selling": return { sortKey: "BEST_SELLING", reverse: false };
-    case "price-asc": return { sortKey: "PRICE", reverse: false };
-    case "price-desc": return { sortKey: "PRICE", reverse: true };
-    case "newest": return { sortKey: "CREATED_AT", reverse: true };
-    case "title": return { sortKey: "TITLE", reverse: false };
-    default: return { sortKey: fallback, reverse: false };
-  }
-}
-
-function collectionSort(sort: SortKey): { sortKey: CollectionSortKeys; reverse: boolean } {
-  switch (sort) {
-    case "best-selling": return { sortKey: "BEST_SELLING", reverse: false };
-    case "price-asc": return { sortKey: "PRICE", reverse: false };
-    case "price-desc": return { sortKey: "PRICE", reverse: true };
-    case "newest": return { sortKey: "CREATED", reverse: true };
-    case "title": return { sortKey: "TITLE", reverse: false };
-    default: return { sortKey: "COLLECTION_DEFAULT", reverse: false };
-  }
-}
-
 /* ───────────── Demo helpers ───────────── */
 
-const price = (p: Product) => Number(p.priceRange.minVariantPrice.amount);
+const byRank = (list: Product[]) => [...list].sort((a, b) => demoRank(a) - demoRank(b));
 
-function demoSort(list: Product[], sort: SortKey) {
-  const out = [...list];
-  switch (sort) {
-    case "price-asc": return out.sort((a, b) => price(a) - price(b));
-    case "price-desc": return out.sort((a, b) => price(b) - price(a));
-    case "newest": return out.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    case "title": return out.sort((a, b) => a.title.localeCompare(b.title));
-    default: return out.sort((a, b) => demoRank(a) - demoRank(b));
-  }
-}
-
-function demoFilter(handle: string): Product[] | null {
+function demoFilter(handle: string, lang: Lang): Product[] | null {
+  const all = byRank(demoProductsFor(lang));
   switch (handle) {
     case "all":
-    case "best-sellers": return demoProducts.filter((p) => !p.tags.includes("gift-set"));
-    case "men": return demoProducts.filter((p) => p.gender === "men" || p.gender === "unisex");
-    case "women": return demoProducts.filter((p) => p.gender === "women" || p.gender === "unisex");
-    case "unisex": return demoProducts.filter((p) => p.gender === "unisex");
-    case "gift-sets": return demoProducts.filter((p) => p.tags.includes("gift-set"));
+    case "best-sellers": return all.filter((p) => !p.tags.includes("gift-set"));
+    case "men": return all.filter((p) => p.gender === "men" || p.gender === "unisex");
+    case "women": return all.filter((p) => p.gender === "women" || p.gender === "unisex");
+    case "unisex": return all.filter((p) => p.gender === "unisex");
+    case "gift-sets": return all.filter((p) => p.tags.includes("gift-set"));
     default: return null;
   }
 }
 
-const demoSearch = (q: string) => searchProducts(demoProducts, q);
-
 /* ───────────── Public API ───────────── */
 
-export const getProduct = cache(async (handle: string): Promise<Product | null> => {
-  if (isDemoMode) return demoProducts.find((p) => p.handle === handle) || null;
-  return sfGetProduct(handle);
-});
-
-export async function getProducts(opts: { search?: string; sort?: SortKey; first?: number } = {}): Promise<Product[]> {
-  const sort = opts.sort || "featured";
-  if (isDemoMode) {
-    const list = opts.search ? demoSearch(opts.search) : demoProducts;
-    return demoSort(list, sort).slice(0, opts.first ?? 100);
-  }
-  const { sortKey, reverse } = productSort(sort, opts.search ? "RELEVANCE" : "BEST_SELLING");
-  return sfGetProducts({ query: opts.search, sortKey, reverse, first: opts.first });
+/** The whole catalog (best sellers first), fetched once per language per build. */
+const allProducts: Partial<Record<Lang, Promise<Product[]>>> = {};
+export function getAllProducts(lang: Lang = "en"): Promise<Product[]> {
+  allProducts[lang] ??= isDemoMode
+    ? Promise.resolve(byRank(demoProductsFor(lang)))
+    : sfGetProducts({ sortKey: "BEST_SELLING", first: 250, lang });
+  return allProducts[lang]!;
 }
 
-export const getCollection = cache(async (handle: string): Promise<Collection | null> => {
-  const fallback = demoCollections.find((c) => c.handle === handle) || null;
+export async function getAllSummaries(lang: Lang = "en"): Promise<ProductSummary[]> {
+  return (await getAllProducts(lang)).map(toSummary);
+}
+
+export const getProduct = cache(async (handle: string, lang: Lang = "en"): Promise<Product | null> => {
+  if (isDemoMode) return demoProductsFor(lang).find((p) => p.handle === handle) || null;
+  return sfGetProduct(handle, lang);
+});
+
+export async function getNewest(lang: Lang, first = 4): Promise<Product[]> {
+  const all = await getAllProducts(lang);
+  return [...all].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, first);
+}
+
+export const getCollection = cache(async (handle: string, lang: Lang = "en"): Promise<Collection | null> => {
+  const base = demoCollections.find((c) => c.handle === handle) || null;
+  const copy = collectionCopy[lang][handle];
+  const fallback = base && copy ? { ...base, ...copy } : base;
   if (isDemoMode) return fallback;
-  const live = handle === "all" ? null : await sfGetCollection(handle);
+  const live = handle === "all" ? null : await sfGetCollection(handle, lang);
   return live || fallback;
 });
 
-export async function getCollectionProducts(handle: string, sort: SortKey = "featured", first = 100): Promise<Product[] | null> {
-  if (isDemoMode) {
-    const list = demoFilter(handle);
-    return list ? demoSort(list, sort).slice(0, first) : null;
-  }
+export async function getCollectionProducts(handle: string, lang: Lang = "en", first = 100): Promise<Product[] | null> {
+  if (isDemoMode) return demoFilter(handle, lang)?.slice(0, first) ?? null;
   if (handle !== "all") {
-    const { sortKey, reverse } = collectionSort(sort);
-    const products = await sfGetCollectionProducts({ handle, sortKey, reverse, first });
+    const products = await sfGetCollectionProducts({ handle, sortKey: "COLLECTION_DEFAULT", first, lang });
     if (products) return products;
   }
   const virtual = virtualCollections[handle];
   if (!virtual) return null;
-  const { sortKey, reverse } = sort === "featured" ? { sortKey: virtual.sort, reverse: !!virtual.reverse } : productSort(sort);
-  return sfGetProducts({ query: virtual.query, sortKey, reverse, first });
+  return sfGetProducts({ query: virtual.query, sortKey: virtual.sort, first, lang });
 }
 
-export async function getCollections(): Promise<Collection[]> {
-  if (isDemoMode) return demoCollections;
-  const live = await sfGetCollections();
+export async function getCollections(lang: Lang = "en"): Promise<Collection[]> {
+  const fallbacks = await Promise.all(demoCollections.map((c) => getCollection(c.handle, lang)));
+  const virtual = fallbacks.filter((c): c is Collection => !!c);
+  if (isDemoMode) return virtual;
+  const live = await sfGetCollections(lang);
   const handles = new Set(live.map((c) => c.handle));
-  return [...demoCollections.filter((c) => !handles.has(c.handle)), ...live];
+  return [...virtual.filter((c) => !handles.has(c.handle)), ...live];
 }
 
-export async function getRecommendations(product: Product): Promise<Product[]> {
-  if (isDemoMode) {
-    return demoSort(
-      demoProducts.filter((p) => p.handle !== product.handle && (p.gender === product.gender || p.gender === "unisex")),
-      "featured",
-    ).slice(0, 4);
+/** "Smells similar" (shared notes and scent family) plus Shopify's own recommendations. */
+export async function getRelated(product: Product, lang: Lang = "en") {
+  const catalog = await getAllProducts(lang);
+  const similar = similarScents(product, catalog, 4);
+  let alsoLike: Product[] = [];
+  if (!isDemoMode) alsoLike = await sfGetRecommendations(product.id, lang).catch(() => []);
+  const taken = new Set([product.handle, ...similar.map((s) => s.product.handle)]);
+  if (alsoLike.length < 4) {
+    alsoLike = [
+      ...alsoLike,
+      ...catalog.filter((p) => !taken.has(p.handle) && (p.gender === product.gender || p.gender === "unisex" || product.gender === "unisex")),
+    ];
   }
-  const recs = await sfGetRecommendations(product.id).catch(() => []);
-  return recs.filter((p) => p.handle !== product.handle).slice(0, 4);
+  alsoLike = alsoLike.filter((p, i, arr) => !taken.has(p.handle) && arr.findIndex((x) => x.handle === p.handle) === i).slice(0, 4);
+  return { similar, alsoLike };
 }
